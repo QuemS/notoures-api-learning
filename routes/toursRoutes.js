@@ -7,8 +7,10 @@ const {
   getTour,
   updateToor,
   deleteToor,
+  aliasTopTours,
 } = require('../controllers/toursControllers');
 
+router.route('/top-5-chips').get(aliasTopTours, getAllTours);
 router.route('/').get(getAllTours).post(createToor);
 router.route('/:id').get(getTour).patch(updateToor).delete(deleteToor);
 
