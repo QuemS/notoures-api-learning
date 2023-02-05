@@ -1,4 +1,3 @@
-/* eslint-disable node/no-unsupported-features/es-syntax */
 const Tour = require('../model/modelTours');
 const APIFeatures = require('../utils/apiFeatures');
 
