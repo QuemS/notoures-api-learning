@@ -1,9 +1,7 @@
 {
   "name": "natours",
   "version": "1.0.0",
-  "engines": {
-    "node": ">=8.0.0"
-  },
+  
   "description": "Learning node, expressa and mongoDB",
   "main": "app.js",
   "scripts": {
