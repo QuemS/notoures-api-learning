@@ -4,10 +4,14 @@ const morgan = require('morgan');
 
 const app = express();
 
-const DB = process.env.DATABASE.replace(
-  '<PASSWORD>',
-  process.env.DATABASE_PASSWORD
-);
+//Atlas inet
+// const DB = process.env.DATABASE.replace(
+//   '<PASSWORD>',
+//   process.env.DATABASE_PASSWORD
+// );
+
+//local
+const DB = process.env.DATA_LOCAL;
 
 mongoose
   .connect(DB, {
