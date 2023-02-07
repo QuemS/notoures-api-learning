@@ -1,7 +1,6 @@
 {
   "name": "natours",
   "version": "1.0.0",
-  
   "description": "Learning node, expressa and mongoDB",
   "main": "app.js",
   "scripts": {
@@ -15,7 +14,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "mongoose": "^5.5.2",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "validator": "^13.9.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
