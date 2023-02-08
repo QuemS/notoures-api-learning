@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must have at least 6 characters'],
     // maxlength: [100, 'The password must have a maximum of 100 characters'],
   },
-  confirmPassword: {
+  passwordConfirm: {
     type: String,
     requred: [true, 'Please confirm your password'],
     validate: {
@@ -48,7 +48,7 @@ userSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, 12);
 
   //Delete passwordConfirm
-  this.confirmPassword = undefined;
+  this.passwordConfirm = undefined;
   next();
 });
 
