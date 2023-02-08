@@ -1,25 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose');
+
 const morgan = require('morgan');
 
 const app = express();
-
-//Atlas inet
-// const DB = process.env.DATABASE.replace(
-//   '<PASSWORD>',
-//   process.env.DATABASE_PASSWORD
-// );
-
-//local
-const DB = process.env.DATA_LOCAL;
-
-mongoose
-  .connect(DB, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-  })
-  .then(() => console.log('DB connections successful!'));
+const AppError = require('./utils/appError');
+const globalErrorHandler = require('./controllers/errorControllers');
 
 const toursRouter = require('./routes/toursRoutes');
 const usersRouter = require('./routes/usersRoutes');
@@ -39,5 +24,11 @@ if (process.env.NODE_ENV === 'development') {
 //3.ROUTES
 app.use('/api/v1/tours', toursRouter);
 app.use('/api/v1/users', usersRouter);
+
+app.all('*', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} this server`, 404));
+});
+
+app.use(globalErrorHandler);
 
 module.exports = app;

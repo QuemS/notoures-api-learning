@@ -93,7 +93,6 @@ toursSchema.virtual('durationWeeks').get(function () {
 //DOCUMENT MIDDWARE: runs before .save() and create();
 toursSchema.pre('save', function (next) {
   this.slag = slugify(this.name, { lower: true });
-  console.log(this);
   next();
 });
 // toursSchema.pre('save', function (next) {

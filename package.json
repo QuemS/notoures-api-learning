@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "Learning node, expressa and mongoDB",
   "main": "app.js",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "cross-env NODE_ENV=development nodemon server.js",
-    "prod": "cross-env NODE_ENV=production nodemon server.js"
+    "prod": "cross-env NODE_ENV=production nodemon server.js",
+    "debug": "ndb server.js"
   },
   "author": "Mihkail Sushchenok",
   "license": "ISC",
@@ -27,6 +31,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.32.2",
+    "ndb": "^1.1.5",
     "nodemon": "^2.0.20",
     "prettier": "^2.8.3",
     "slugify": "^1.6.5"
