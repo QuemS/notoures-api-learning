@@ -4,6 +4,7 @@ const handeCastErrorDB = (err) => {
   const message = `Invalid ${err.path}:${err.value}.`;
   return new AppError(message, 400);
 };
+
 const handlerDublicateFielsDB = (err) => {
   const key = Object.entries(err.keyValue).flat().join(':');
 
@@ -18,6 +19,13 @@ const handlerValidationError = (err) => {
 
   return new AppError(message, 400);
 };
+
+const handlerJsonWebTokenError = () =>
+  new AppError(`Invalid token! Please log in again`, 401);
+
+const handlerTokenExpiredError = () =>
+  new AppError('Your token has expired! Please log in again,', 401);
+
 const errorSendDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -62,6 +70,8 @@ module.exports = (err, req, res, next) => {
     if (err.code === 11000) error = handlerDublicateFielsDB(error);
 
     if (err.name === 'ValidationError') error = handlerValidationError(error);
+    if (err.name === 'JsonWebTokenError') error = handlerJsonWebTokenError();
+    if (err.name === 'TokenExpiredError') error = handlerTokenExpiredError();
 
     errorSendProd(error, res);
   }
