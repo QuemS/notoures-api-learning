@@ -15,7 +15,7 @@ router.route('/signup').post(signUp);
 router.route('/login').post(login);
 
 router.route('/fogotPassword').post(fogotPassword);
-router.route('/resetPassword/:token').post(resetPassword);
+router.route('/resetPassword/:token').patch(resetPassword);
 
 router.route('/').get(getAllUsers).post(createUser);
 router.route('/img/:name').get(getImg);

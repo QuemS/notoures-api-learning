@@ -1,9 +1,10 @@
+const crypto = require('crypto')
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../model/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
-const sendEmail = require('../utils/email')
+const sendEmail = require('../utils/email');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -116,7 +117,7 @@ exports.fogotPassword = catchAsync(async (req, res, next) => {
 
   const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
 
-  const message = `Fogot yout password? Submit a PATCH request with your new password and passwordConfirm to:${resetURL} \nIf you didn't forget your password, please ignore this email!`
+  const message = `Fogot yout password? Submit a PATCH request with your new password and passwordConfirm to:${resetURL}. \nIf you didn't forget your password, please ignore this email!`
 
   try {
     await sendEmail({
@@ -140,8 +141,35 @@ exports.fogotPassword = catchAsync(async (req, res, next) => {
 });
 
 
-exports.resetPassword = (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  //1. Get user based token
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  console.log(hashedToken);
 
-};
+  const user = await User.findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gte: Date.now() } });
+
+
+
+  //2.If token has not expired, and there is user, set the new password
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400))
+  }
+  //3. Update changedPasswordAt propery for the user.
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+
+  //4. Log the user in, send JWT token 
+  const token = signToken(user._id);
+  res.status(200).json({
+    status: 'success',
+    token,
+  });
+
+
+});
 
 

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
+const validators = require('validator');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto')
 
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     requred: [true, 'Please provide your email'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
+    validate: [validators.isEmail, 'Please provide a valid email'],
   },
   photo: {
     type: String,
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordConfirm: {
     type: String,
-    requred: [true, 'Please confirm your password'],
+    required: [true, 'Please confirm your password'],
     validate: {
       //this olny work Create() and save()
       validator: function (el) {
@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema({
       },
       message: 'Passwords are not the same',
     },
+
   },
   passwordChangedAt: {
     type: Date,
@@ -63,7 +64,12 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
 
+  this.passwordChangedAt = Date.now - 1000;
+  next();
+})
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPasswod
