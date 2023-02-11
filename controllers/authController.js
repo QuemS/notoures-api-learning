@@ -11,23 +11,50 @@ const signToken = (id) =>
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
-exports.signUp = catchAsync(async (req, res) => {
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id)
+  res.status(statusCode).json({
+    status: "success",
+    token,
+  })
+}
+exports.signUp = catchAsync(async (req, res, next) => {
+
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+
   });
 
-  const token = signToken(newUser._id);
+  //Create an activation token
+  const activateToken = newUser.createTokenUseraActivate();
+  await newUser.save({ validateBeforeSave: false });
 
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      User: newUser,
-    },
-  });
+  const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/activeEmail/${activateToken}`;
+
+  const message = `Good afternoon, to activate the user, pour the link \n${resetURL}.`
+  //Sending email
+  try {
+    await sendEmail({
+      email: newUser.email,
+      subject: 'User activation',
+      message
+    })
+
+    res.status(200).json({
+      status: 'success',
+      message: "Please activate user!"
+    })
+  } catch (error) {
+    newUser.emailActiveToken = undefined;
+
+    await newUser.save({ validateBeforeSave: false });
+    return next(new AppError('There was an error sending the email. Try again.later!', 500))
+  }
+
+
 });
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
@@ -38,11 +65,20 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   //2. Check if user exist && password is correct
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email }).select('+password').select('+emailActiveToken');
+
+
+  //3.Checking if the account is activated
+  if (user.emailActiveToken) {
+    return next(new AppError('Account not activated. Please activate', 401))
+  }
+
 
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email of password', 401));
   }
+
+
 
   //3. If everything ok, send token to client
   const token = signToken(user._id);
@@ -90,7 +126,6 @@ exports.protect = catchAsync(async (req, res, next) => {
   req.user = currentUser;
   next();
 });
-
 exports.restrictTo = (...roles) => (req, res, next) => {
   //roles ['admin', 'lead-guide']
   if (!roles.includes(req.user.role)) {
@@ -99,15 +134,17 @@ exports.restrictTo = (...roles) => (req, res, next) => {
     );
   }
   next();
-}
-
-
+};
 exports.fogotPassword = catchAsync(async (req, res, next) => {
   // 1.Get user based on POSTed email.
-  const user = await User.findOne({ email: req.body.email });
+  const user = await User.findOne({ email: req.body.email }).select('+emailActiveToken');
+  if (user.emailActiveToken) {
+    return next(new AppError('Account not activated. Please activate', 401))
+  }
   if (!user) {
     return next(new AppError('There is no user with email address ', 404))
   }
+
 
 
   //2.Generate the random reset token.
@@ -139,17 +176,12 @@ exports.fogotPassword = catchAsync(async (req, res, next) => {
 
 
 });
-
-
 exports.resetPassword = catchAsync(async (req, res, next) => {
   //1. Get user based token
   const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-  console.log(hashedToken);
+
 
   const user = await User.findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gte: Date.now() } });
-
-
-
   //2.If token has not expired, and there is user, set the new password
   if (!user) {
     return next(new AppError('Token is invalid or has expired', 400))
@@ -170,6 +202,41 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   });
 
 
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  //1. Get user from collection.
+  const user = await User.findById(req.user.id).select('+password');
+
+  //2. Check if POSTed current password is correct.
+  if (!(await user.correctPassword(req.body.passwordCurrent, user.password)
+  )) return next(new AppError('You carrent password is wrong', 401));
+
+
+  //3. If so, update password.
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  await user.save();
+
+  //4. Log user in, send JWT.
+  createSendToken(user, 200, res);
+});
+
+exports.activateUserEmail = catchAsync(async (req, res, next) => {
+  //1. Get user based token
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+  const updateUser = await User.findOneAndUpdate({ emailActiveToken: hashedToken }, { emailActiveToken: undefined, active: true }, { new: true, runValidators: false });
+
+  if (!updateUser) return next(new AppError('The user is already activated. Please log in!', 403));
+
+
+
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Active!!!',
+  });
 });
 
 
