@@ -1,3 +1,4 @@
+const path = require('path');
 const User = require('../model/userModel');
 const catchAsync = require('../utils/catchAsync');
 
@@ -35,3 +36,19 @@ exports.deleteUser = (req, res) => {
     message: 'error',
   });
 };
+
+exports.getImg = catchAsync(async (req, res, next) => {
+  const options = {
+    root: path.join(__dirname, '../dev-data/img/'),
+  };
+
+  const fileName = req.params.name;
+
+  res.status(200).sendFile(fileName, options, (err) => {
+    if (err) {
+      next(err);
+    } else {
+      console.log('Sent:', fileName);
+    }
+  });
+});
