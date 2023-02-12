@@ -12,9 +12,25 @@ const signToken = (id) =>
   });
 
 const createSendToken = (user, statusCode, res) => {
-  const token = signToken(user._id)
+  const token = signToken(user._id);
+
+  const cookieOptions = {
+    expires: new Date(Date.now() + process.env.JWT_EXPIRES_COOKIE * 24 * 60 * 60 * 1000),
+    httpOnly: true
+
+  };
+
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+  res.cookie('jwt', token, cookieOptions);
+  //remove passrod output
+  user.password = undefined;
+
   res.status(statusCode).json({
     status: "success",
+    data: {
+      user
+    },
     token,
   })
 }
@@ -43,17 +59,19 @@ exports.signUp = catchAsync(async (req, res, next) => {
       message
     })
 
-    res.status(200).json({
-      status: 'success',
-      message: "Please activate user!"
-    })
   } catch (error) {
     newUser.emailActiveToken = undefined;
-
     await newUser.save({ validateBeforeSave: false });
     return next(new AppError('There was an error sending the email. Try again.later!', 500))
   }
-
+  newUser.password = undefined;
+  newUser.emailActiveToken = undefined;
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: newUser
+    }
+  })
 
 });
 exports.login = catchAsync(async (req, res, next) => {
@@ -65,66 +83,15 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   //2. Check if user exist && password is correct
-  const user = await User.findOne({ email }).select('+password').select('+emailActiveToken');
-
-
-  //3.Checking if the account is activated
-  if (user.emailActiveToken) {
-    return next(new AppError('Account not activated. Please activate', 401))
-  }
-
-
+  const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email of password', 401));
   }
 
-
-
   //3. If everything ok, send token to client
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
-});
-exports.protect = catchAsync(async (req, res, next) => {
-  let token;
-  //1. Gettin token and check of it's there
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-  if (!token) {
-    return next(
-      new AppError('You are not logged in! Plese lo gin to get access.', 401)
-    );
-  }
-  //2.Verification token
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  //3. Check if user still exists
-  const currentUser = await User.findById(decoded.id);
-  if (!currentUser) {
-    return next(
-      new AppError(
-        'The user belonging to this token does no longer exist.',
-        401
-      )
-    );
-  }
+  createSendToken(user, 200, res);
 
-  //4. Check if  user changed password after the JWT the token was issued
-  if (currentUser.changedPasswordAfter(decoded.iat)) {
-    return next(
-      new AppError('User recently changed password! Please log in again', 401)
-    );
-  }
-  //GRAND ACCESS TO PROTECTED ROUTE
-
-  req.user = currentUser;
-  next();
 });
 exports.restrictTo = (...roles) => (req, res, next) => {
   //roles ['admin', 'lead-guide']
@@ -137,15 +104,11 @@ exports.restrictTo = (...roles) => (req, res, next) => {
 };
 exports.fogotPassword = catchAsync(async (req, res, next) => {
   // 1.Get user based on POSTed email.
-  const user = await User.findOne({ email: req.body.email }).select('+emailActiveToken');
-  if (user.emailActiveToken) {
-    return next(new AppError('Account not activated. Please activate', 401))
-  }
+  const user = await User.findOne({ email: req.body.email });
+
   if (!user) {
     return next(new AppError('There is no user with email address ', 404))
   }
-
-
 
   //2.Generate the random reset token.
   const resetToken = user.createPasswordResetToken();
@@ -203,7 +166,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 
 });
-
 exports.updatePassword = catchAsync(async (req, res, next) => {
   //1. Get user from collection.
   const user = await User.findById(req.user.id).select('+password');
@@ -221,22 +183,73 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   //4. Log user in, send JWT.
   createSendToken(user, 200, res);
 });
-
 exports.activateUserEmail = catchAsync(async (req, res, next) => {
   //1. Get user based token
   const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-  const updateUser = await User.findOneAndUpdate({ emailActiveToken: hashedToken }, { emailActiveToken: undefined, active: true }, { new: true, runValidators: false });
+  const updateUser = await User.findOneAndUpdate({ emailActiveToken: hashedToken }, { emailActiveToken: undefined }, { new: true, runValidators: false });
 
   if (!updateUser) return next(new AppError('The user is already activated. Please log in!', 403));
-
-
-
 
   res.status(200).json({
     status: 'success',
     message: 'Active!!!',
   });
 });
+
+
+
+exports.protect = catchAsync(async (req, res, next) => {
+  let token;
+  //1. Gettin token and check of it's there
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) {
+    return next(
+      new AppError('You are not logged in! Plese lo gin to get access.', 401)
+    );
+  }
+  //2.Verification token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  //3. Check if user still exists
+  const currentUser = await User.findById(decoded.id);
+  if (!currentUser) {
+    return next(
+      new AppError(
+        'The user belonging to this token does no longer exist.',
+        401
+      )
+    );
+  }
+
+  //4. Check if  user changed password after the JWT the token was issued
+  if (currentUser.changedPasswordAfter(decoded.iat)) {
+    return next(
+      new AppError('User recently changed password! Please log in again', 401)
+    );
+  }
+  //GRAND ACCESS TO PROTECTED ROUTE
+
+  req.user = currentUser;
+  next();
+});
+
+exports.protectActiveUser = catchAsync(async (req, res, next) => {
+  const { email } = req.body
+  if (!email) {
+    return next(new AppError('Please provide email and password', 400));
+  }
+  console.log(req.body.email);
+  const user = await User.findOne({ email }).select('+emailActiveToken');
+  if (user.emailActiveToken) {
+    return next(new AppError('Account not activated. Please activate', 401))
+  }
+  next();
+})
 
 

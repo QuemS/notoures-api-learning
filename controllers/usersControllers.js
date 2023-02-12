@@ -88,3 +88,12 @@ exports.getImg = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+exports.testResponse = (req, res) => {
+  res.status(200).join({
+    status: 'success'
+  })
+};
+
+
+
