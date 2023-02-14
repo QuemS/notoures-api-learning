@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const toursControllers = require('../controllers/toursControllers');
 const authController = require('../controllers/authController');
+const reviewsControllers = require('../controllers/reviewsControllers');
 
 router.route('/monthly-plan/:year').get(toursControllers.getMonthlyPlan);
 router.route('/tour-stats').get(toursControllers.getTourStat);
@@ -23,4 +24,9 @@ router
     toursControllers.deleteToor
   );
 
+router.route('/:tourId/reviews').post(authController.protect, authController.restrictTo('user'), reviewsControllers.createReview);
+
 module.exports = router;
+
+//Post /tours/asdasdas/reviews/
+//Get /tours/asdasdas/reviews/

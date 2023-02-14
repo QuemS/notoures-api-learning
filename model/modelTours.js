@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+// const populateFn = require('../utils/populateFunction')
 // const validator = require('validator');
+// const User = require('./userModel')
 
 const toursSchema = new mongoose.Schema(
   {
@@ -79,6 +81,40 @@ const toursSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    startLocation: {
+      type: {
+        type: String,
+        default: "Point",
+        emun: ['Point']
+      },
+      coordinates: [Number],
+      adress: String,
+      description: String
+    },
+    locations: [{
+      type: {
+        type: String,
+        default: "Point",
+        emun: ['Point']
+      },
+      coordinates: [Number],
+      adress: String,
+      description: String,
+      day: Number
+    }
+
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId, ref: 'User'
+      }
+    ],
+    // reviews: [
+    //   {
+    //     type: mongoose.Schema.ObjectId,
+    //     ref: "Review"
+    //   }
+    // ]
   },
   {
     toJSON: { virtuals: true },
@@ -90,12 +126,22 @@ toursSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
+//Virtual populate
+toursSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
+
+})
+
 //DOCUMENT MIDDWARE: runs before .save() and create();
 toursSchema.pre('save', function (next) {
   this.slag = slugify(this.name, { lower: true });
   next();
 });
+
 // toursSchema.pre('save', function (next) {
+
 //   //this save doc
 //   console.log(this);
 //   next();
@@ -108,10 +154,17 @@ toursSchema.pre('save', function (next) {
 // });
 
 //QUERY MIDDLEWARE
+
 toursSchema.pre(/^find/, function (next) {
   this.find({ tourSecret: { $ne: true } });
   next();
 });
+// toursSchema.pre(/^find/, populateFn('guides', '-__v -passwordChangedAt'))
+
+// toursSchema.pre('save', async function (next) {
+//   const guidesPromise = this.guides.map(async id => await User.findById(id))
+//   this.guides = await Promise.all(guidesPromise)
+// })
 
 //AGREGARION MIDDLEWARE
 toursSchema.pre('aggregate', function (next) {

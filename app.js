@@ -13,6 +13,7 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorControllers');
 const toursRouter = require('./routes/toursRoutes');
 const usersRouter = require('./routes/usersRoutes');
+const reviewsRouter = require('./routes/reviewsRoutes');
 //CROS OPTIONS
 // const optionsCors = require('./utils/optionsCors')
 
@@ -62,7 +63,7 @@ app.use((req, res, next) => {
 
 
 //3.ROUTES
-
+app.use('/api/v1/review', reviewsRouter)
 app.use('/api/v1/tours', toursRouter);
 app.use('/api/v1/users', usersRouter);
 
