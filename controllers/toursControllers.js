@@ -1,7 +1,6 @@
 const Tour = require('../model/modelTours');
-const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/appError');
+
 const factory = require("./handlerFactory");
 
 exports.aliasTopTours = (req, res, next) => {
@@ -10,28 +9,6 @@ exports.aliasTopTours = (req, res, next) => {
   req.query.fields = 'name,ratingsAverage,price,summary,difficulty';
   next();
 };
-exports.getAllTours = catchAsync(async (req, res) => {
-  const features = new APIFeatures(Tour, req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .pagination();
-  const tours = await features.query;
-  //query.sort().select().skip().limit()
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: {
-      tours,
-    },
-  });
-});
-exports.getTour = factory.getOne(Tour, { path: 'reviews' })
-
-
-exports.createToor = factory.createOne(Tour);
-exports.updateToor = factory.updateOne(Tour);
-exports.deleteToor = factory.deleteOne(Tour);
 exports.getTourStat = catchAsync(async (req, res) => {
   const stats = await Tour.aggregate([
     {
@@ -95,3 +72,9 @@ exports.getMonthlyPlan = catchAsync(async (req, res) => {
     },
   });
 });
+
+exports.getTour = factory.getOne(Tour, { path: 'reviews' })
+exports.createToor = factory.createOne(Tour);
+exports.updateToor = factory.updateOne(Tour);
+exports.deleteToor = factory.deleteOne(Tour);
+exports.getAllTours = factory.getAll(Tour);

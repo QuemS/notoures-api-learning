@@ -39,32 +39,14 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   })
 })
 
-exports.getAllUsers = catchAsync(async (req, res) => {
-  const user = await User.find();
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      user,
-    },
-  });
-});
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'fail',
-    message: 'error',
-  });
-};
+
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'fail',
     message: 'error',
   });
 };
-//Do not update passtwords with this!!
-exports.updateUser = factory.updateOne(User);
-exports.deleteUser = factory.deleteOne(User);
-
 exports.getImg = catchAsync(async (req, res, next) => {
   const options = {
     root: path.join(__dirname, '../dev-data/img/'),
@@ -80,6 +62,13 @@ exports.getImg = catchAsync(async (req, res, next) => {
     }
   });
 });
+//Do not update passtwords with this!!
+exports.updateUser = factory.updateOne(User);
+exports.deleteUser = factory.deleteOne(User);
+exports.getUser = factory.getOne(User);
+exports.getAllUsers = factory.getAll(User);
+
+
 
 
 

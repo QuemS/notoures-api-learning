@@ -8,6 +8,6 @@ const authController = require('../controllers/authController');
 
 router.route('/').get(reviewsControllers.allgetReviews).post(authController.protect, reviewsControllers.setTourUserId, reviewsControllers.createReview);
 
-router.route('/:id').delete(authController.protect, authController.restrictTo('admin'), reviewsControllers.deleteReview).patch(reviewsControllers.updateReview);
+router.route('/:id').get(reviewsControllers.getReview).delete(authController.protect, authController.restrictTo('admin'), reviewsControllers.deleteReview).patch(reviewsControllers.updateReview);
 
 module.exports = router;
