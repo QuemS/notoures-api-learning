@@ -2,6 +2,7 @@ const path = require('path');
 const User = require('../model/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const factory = require("./handlerFactory");
 
 const filterObj = (obj, ...alloweFields) => {
   const newObj = {};
@@ -60,18 +61,9 @@ exports.createUser = (req, res) => {
     message: 'error',
   });
 };
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'fail',
-    message: 'error',
-  });
-};
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: 'fail',
-    message: 'error',
-  });
-};
+//Do not update passtwords with this!!
+exports.updateUser = factory.updateOne(User);
+exports.deleteUser = factory.deleteOne(User);
 
 exports.getImg = catchAsync(async (req, res, next) => {
   const options = {
@@ -89,11 +81,6 @@ exports.getImg = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.testResponse = (req, res) => {
-  res.status(200).join({
-    status: 'success'
-  })
-};
 
 
 

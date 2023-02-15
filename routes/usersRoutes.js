@@ -2,7 +2,6 @@ const express = require('express');
 
 const router = express.Router();
 const {
-  testResponse,
   deleteMe,
   updateMe,
   getAllUsers,
@@ -28,11 +27,11 @@ router.route('/resetPassword/:token').patch(resetPassword);
 
 router.route('/').get(getAllUsers).post(createUser);
 router.route('/img/:name').get(getImg);
-router.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
+router.route('/:id').get(getUser).patch(updateUser).delete(protect, deleteUser);
 
 
 
-router.route('/test').get(testResponse);
+
 
 
 

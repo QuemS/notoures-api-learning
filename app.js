@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 
 
 //3.ROUTES
-app.use('/api/v1/review', reviewsRouter)
+app.use('/api/v1/reviews', reviewsRouter)
 app.use('/api/v1/tours', toursRouter);
 app.use('/api/v1/users', usersRouter);
 
